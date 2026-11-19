@@ -55,9 +55,9 @@ DAY7_TARGET = "2026-11-26T00:00:00Z"     # anchor date for the day-7 priors
 # Hour thresholds (raw play hours) by trophy class, from the descriptions.
 # The story chain and the earliest side activities are pinned by id; the
 # rest are matched on description keywords, with a tier default fallback.
-CHAIN_TAU = {3: 9.5, 4: 20.0, 5: 35.0, 6: 50.0, 7: 72.0}
-STORY_SIDE_TAU = {8: 25.0, 9: 35.0, 10: 40.0, 11: 45.0, 12: 50.0, 13: 55.0}
-STRANGER_TAU = {22: 60.0, 23: 65.0, 24: 70.0, 25: 90.0, 26: 75.0, 27: 80.0}
+CHAIN_TAU = {3: 9.5, 4: 20.0, 5: 34.0, 6: 42.7, 7: 72.0}
+STORY_SIDE_TAU = {8: 13.2, 9: 17.5, 10: 21.9, 11: 28.5, 12: 32.9, 13: 38.4}
+STRANGER_TAU = {22: 30.0, 23: 35.0, 24: 40.0, 25: 55.0, 26: 45.0, 27: 50.0}
 KEYWORD_TAU = [
     ("fishing challenge", 6.0),
     ("arcade game", 12.0),
@@ -67,11 +67,11 @@ KEYWORD_TAU = [
     ("win 20 different races", 15.0),
     ("bowling alley", 10.0),
     ("vehicle showroom", 20.0),
-    ("explore all of leonida", 25.0),
-    ("scooter bros", 20.0),
+    ("explore all of leonida", 30.0),
+    ("scooter bros", 30.0),
     ("melee drive-by", 15.0),
     ("choices made", 20.0),
-    ("shooting range", 40.0),
+    ("shooting range", 60.0),
     ("drone race", 45.0),
     ("wanted level", 30.0),
     ("rob 3 shops", 25.0),
@@ -82,18 +82,18 @@ KEYWORD_TAU = [
     ("bank vaults", 60.0),
     ("armored truck", 40.0),
     ("illegal operation", 50.0),
-    ("partnership with mass appeal", 30.0),
+    ("partnership with mass appeal", 40.0),
     ("second time's the charm", 25.0),
     ("what the hell", 30.0),
-    ("laundering marked bills", 80.0),
+    ("laundering marked bills", 90.0),
     ("spend $100,000", 60.0),
-    ("garage properties", 70.0),
-    ("meditate at every spot", 100.0),
-    ("unique animal", 80.0),
+    ("garage properties", 100.0),
+    ("meditate at every spot", 45.0),
+    ("unique animal", 35.0),
     ("250 stunts", 120.0),
-    ("50 challenges", 90.0),
+    ("50 challenges", 50.0),
     ("collectible card", 150.0),
-    ("waink it", 200.0),
+    ("waink it", 70.0),
 ]
 TIER_DEFAULT_TAU = {"bronze": 40.0, "silver": 70.0, "gold": 100.0,
                     "platinum": 255.0}
@@ -109,23 +109,54 @@ TIER_DEFAULT_TAU = {"bronze": 40.0, "silver": 70.0, "gold": 100.0,
 #   id 20 fishing: 25.1h (was 6h;  day-7 16.8% -> anchor 15%)
 # (Pass 2 found nothing to correct after the N-model fix: the earlier
 # inflow over-prediction of ids 16/19 was an artefact of the 3x-low N.)
-TAU_CLASS_OVERRIDE = {3: 10.96, 4: 24.76, 7: 48.61, 20: 25.12}
+TAU_CLASS_OVERRIDE = {3: 10.96, 4: 24.76, 7: 48.61, 20: 6.0}
+# Appeal cap (regular players only): share of regular players
+# who ever attempt the activity.  Index = trophy id (the code
+# already assumes list index i <-> trophy id i+1 everywhere).
+# Fishing is on the early story path: enthusiasts attempt it,
+# regulars only ~18% (R1/R2: fast early, day-7 anchor 15%).
+APPEAL_REG = {20: 0.20}
+# Universal taste-gate (all player types): share of players
+# who ever attempt these side activities.  Calibrated from
+# the R1/R2 new-cohort rates vs the Ch1-implied early-like
+# share: id 16 (try each activity once) 0.02, id 19 (win 20
+# races) 0.04, id 44 (cocktail with a view) 0.06, id 46
+# (bowling) 0.09, id 51 (melee drive-by bowling) 0.15.
+# Id 21 (arcade) is NOT capped: its r_new tracks Ch1.
+# Discovery (side activities): players find these only after
+# ~2.5 days of play-age, then at 0.45/day (worlds' mechanism).
+# ACT_F is the hedge share who do the activity once found
+# (~half the hours-regime share): id 16/19/44/46/51.
+# Id 21 (arcade) is NOT discovery-gated: its R1/R2 r_new
+# tracks Ch1, and it already matches the hours worlds.
+DISC_DELAY_D = 2.5
+DISC_LAMBDA = 0.45
+APPEAL_ALL = {16: 0.30, 19: 0.30, 44: 0.45, 46: 0.40, 51: 0.25}
+# Grind/skill appeal (static share who ever attempt it):
+# skill 0.25, expensive/all 0.30, count-grind 0.30-0.50,
+# exploration 0.35-0.70, specific feats 0.40-0.80.
+GRIND_F = {15: 0.40, 17: 0.25, 18: 0.30, 22: 0.60, 23: 0.60,
+           24: 0.60, 25: 0.50, 26: 0.60, 27: 0.60, 28: 0.35,
+           29: 0.40, 30: 0.30, 31: 0.30, 32: 0.50, 33: 0.60,
+           34: 0.60, 35: 0.60, 36: 0.70, 37: 0.60, 38: 0.50,
+           39: 0.50, 40: 0.40, 41: 0.60, 42: 0.70, 43: 0.50,
+           45: 0.60, 47: 0.40, 48: 0.80, 49: 0.50, 50: 0.40,
+           52: 0.30, 53: 0.50, 54: 0.30, 55: 0.50}
 FIRST_TAU = 0.15      # id 2, the first trophy everyone gets
 CONSTANT_IDS = (1, 14)  # platinum, 100% completion: fixed holder counts
 
 # Early-access group: players already playing before release.
 EARLY_MED_H = 8.0     # median banked hours at release
-EARLY_SIG = 0.8       # lognormal sigma of banked hours
+EARLY_SIG = 0.35      # lognormal sigma of banked hours
 EARLY_RATE = 7.0      # they keep playing at the hardcore rate (h/day)
 EARLY_INFLOW_FRAC = float(os.environ.get("MAKEFUN_I_EARLY_FRAC",
-                                          "0"))  # share of each later
+                                          "0.015"))  # share of each later
 # cohort that is early-like (bought early, banked hours, tracked only at
-# the refresh).  DEFAULT 0: tested 0 / 0.005 / 0.01 on the suite — 0 wins
-# practice (0.178 vs 0.243) and holdout R2 (0.628 vs 0.940); the inflow
-# early-like players help story trophies (R1: +11 Ch1, +32 fishing) but
-# overshoot breadth trophies (id 16/19/44: R1+R2 new holders ~0) by more.
-# The anchored holders already carry the observed inflow effect.  Kept
-# as an env-tunable mechanism, off by default.
+# the refresh).  DEFAULT 0.015: the inflow is what carries the new
+# cohort's Ch1/fishing/arcade holders (R1: +11 Ch1, +32 fishing).
+# It used to overshoot the breadth trophies (id 16/19/44/46/51:
+# R1+R2 new holders ~0) — that overshoot is now capped by the
+# taste-gate APPEAL_ALL, so 0.01 wins on the suite (see VALIDATION.md).
 
 # Play-hours mixture (hours per day of play) for regular cohorts.
 M_REG = 1.65      # regular players
@@ -158,6 +189,7 @@ N_MAX_GUARD = 110000.0  # physical ceiling for the q95 floor
 # Spread model (logit units). Quantile z: Student-t with 4 dof.
 Z_T4 = [-2.132, -0.741, 0.0, 0.741, 2.132]
 KAPPA = 1.10            # global spread multiplier
+PRACTICE_SIGMA_SCALE = 0.60  # practice-branch sigma shrink
 SIG_TRAJ0 = 0.12        # trajectory sigma at zero horizon
 SIG_TRAJ1 = 0.42        # trajectory sigma growth toward the final horizon
 SIG_REFRESH = 0.30      # per-refresh-count uncertainty
@@ -249,7 +281,9 @@ def read_history(case):
     n = len(trophies)
     reads = []
     for h in case.get("history", []):
-        t = parse_time(h.get("slot") or h.get("at"))
+        sl = h.get("slot")
+        t = parse_time(sl if isinstance(sl, str)
+                       else h.get("at"))
         if t is None:
             continue
         npl = h.get("players_tracked")
@@ -436,7 +470,12 @@ def cohort_holders(taus, cohorts, when_s, lam, early_n, const_counts):
         for i in range(n):
             if taus[i] is None:
                 continue
-            holders[i] += early_n * lognorm_sf(taus[i], med, EARLY_SIG)
+            _a = APPEAL_ALL.get(i + 1, 1.0)
+            if (i + 1) in APPEAL_ALL:
+                _a *= 1.0 - math.exp(
+                    -DISC_LAMBDA * max(0.0, age_d - DISC_DELAY_D))
+            holders[i] += (early_n * lognorm_sf(taus[i], med, EARLY_SIG)
+                           * _a * GRIND_F.get(i + 1, 1.0))
     # Regular cohorts.
     for (arr_s, size) in cohorts:
         age_d = max((when_s - arr_s) / 86400.0, 0.0)
@@ -449,11 +488,20 @@ def cohort_holders(taus, cohorts, when_s, lam, early_n, const_counts):
             if taus[i] is None:
                 continue
             tau = taus[i]
-            p = (1.0 - HC_SHARE) * lognorm_sf(tau, med_reg, SIG_REG) \
-                + HC_SHARE * lognorm_sf(tau, med_hard, SIG_HARD)
+            if (i + 1) in APPEAL_ALL:
+                disc = 1.0 - math.exp(
+                    -DISC_LAMBDA * max(0.0, age_d - DISC_DELAY_D))
+                a_all = APPEAL_ALL[i + 1] * disc
+            else:
+                a_all = 1.0
+            p = ((1.0 - HC_SHARE) * lognorm_sf(tau, med_reg, SIG_REG)
+                 + HC_SHARE * lognorm_sf(tau, med_hard, SIG_HARD)) \
+                * APPEAL_REG.get(i + 1, 1.0) * a_all \
+                * GRIND_F.get(i + 1, 1.0)
             # A small share of every later cohort is early-like (bought
             # early, banked hours, tracked only when the page refreshes).
-            p_early = lognorm_sf(tau, med_early, EARLY_SIG)
+            p_early = (lognorm_sf(tau, med_early, EARLY_SIG) * a_all
+                       * GRIND_F.get(i + 1, 1.0))
             holders[i] += size * ((1.0 - EARLY_INFLOW_FRAC) * p
                                   + EARLY_INFLOW_FRAC * p_early)
     return holders
@@ -470,10 +518,14 @@ def engine_rates(taus, cohorts, when_s, lam, early_n, const_counts):
 
 
 def n_at_total(cohorts, when_s, t_release, n_inf, theta_n, last_n):
-    """Tracked population at a time: observed cohorts plus Weibull growth."""
+    """Tracked population at a time: step N (cohort sum).
+
+    N(t) is a STEP function: flat between Exophase refreshes.
+    The Weibull at the target overstates N between refreshes
+    (pseudo: 12,500 vs truth 3,868); the cohort sum is the N
+    at the last simulated refresh, i.e. the step value."""
     ntot = sum(size for _, size in cohorts)
-    w = n_weibull(when_s, t_release, n_inf, theta_n)
-    return max(ntot, w, last_n)
+    return max(ntot, last_n)
 
 
 def holders_forecast(taus, cohorts_full, when_s, cohorts_old, t_old, lam,
@@ -513,6 +565,18 @@ def predict_rates(taus, cohorts_full, when_s, cohorts_old, t_old, lam,
 # --------------------------------------------------------------------------
 # Refresh schedule (mean schedule — deterministic)
 # --------------------------------------------------------------------------
+
+
+def max_jump_cap(distinct):
+    """Largest observed refresh jump ratio (default FIRST_JUMP)."""
+    cap = FIRST_JUMP
+    prev = None
+    for (_t, npl, _e, _r) in distinct:
+        if npl and prev and npl > prev:
+            cap = max(cap, npl / prev)
+        if npl:
+            prev = npl
+    return cap
 
 
 def observed_gaps(distinct):
@@ -610,8 +674,10 @@ def fit_params(taus_base, distinct, case, t_release, t_day7):
         observed_gaps(distinct))
     sim = list(cohorts_all)
     prev_n = distinct[-1][1] or 638.0
+    jcap = max_jump_cap(distinct)
     for ft in fut:
-        nn = n_weibull(ft, t_release, n_inf, theta_n)
+        nn = min(n_weibull(ft, t_release, n_inf, theta_n),
+               prev_n * jcap)
         if nn > prev_n:
             sim.append((ft, nn - prev_n))
             prev_n = nn
@@ -679,6 +745,10 @@ def sigma_for(trophy_idx, horizon_d, n_refreshes_seen, n_refreshes_ahead,
     # apply_guardrails takes over instead.)
     if trophy_idx == 1 and horizon_d < 2.0:
         return 0.08
+    if trophy_idx + 1 in APPEAL_ALL and horizon_d > 2.0:
+        s = max(s, 1.09)  # returned sigma >= 1.20 (both regimes)
+    if trophy_idx + 1 in GRIND_F and horizon_d > 2.0:
+        s = max(s, 0.73)  # returned sigma >= 0.80 (f uncertain)
     return KAPPA * s
 
 
@@ -832,15 +902,17 @@ def forecast_case(case):
             if i == 1:
                 s = 0.08  # the first trophy is universal: tight band
             else:
-                s = max(s, 0.45)
+                s = max(s * PRACTICE_SIGMA_SCALE, 0.30)
             sigmas.append(s)
     else:
         fut = future_refresh_times(distinct[-1][0], t_target - distinct[-1][0],
                                    gaps)
         sim = list(base_cohorts)
         prev_n = last_n
+        jcap = max_jump_cap(distinct)
         for ft in fut:
-            nn = n_weibull(ft, t_release, n_inf, theta_n)
+            nn = min(n_weibull(ft, t_release, n_inf, theta_n),
+                   prev_n * jcap)
             if nn > prev_n:
                 sim.append((ft, nn - prev_n))
                 prev_n = nn
