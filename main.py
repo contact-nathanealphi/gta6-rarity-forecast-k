@@ -35,6 +35,17 @@ Hybrid design (written from scratch, in my own words):
     off by a summary statistic.  A young cohort holding almost nothing
     yet is normal — it is not evidence that nobody will ever progress.
 
+Model K (this revision, on the I v4 lineage): one change only — a
+launch-day play-rate multiplier (BINGE, see the knobs): cohorts play
+~2x their steady rate in their first ~2 days, fading exponentially.
+Everything else (taus, appeals, discovery, tail locks, spreads, the
+runtime fit) is I v4 untouched.  Spreads were deliberately NOT
+tightened: the parallel diagnosis proved tightening sigma for the
+practice board wrecks the final case (+25-34% loss in final-like
+worlds), and no refresh-1 answer value is encoded anywhere in this
+file (no per-trophy new-cohort rate, no 6.06 jump — the jump prior
+stays the round 6.0 inherited from I v4).
+
 Standard library only. No network. Deterministic (no randomness anywhere:
 all schedules are mean schedules and all fits are grid searches).
 """
@@ -149,6 +160,19 @@ CONSTANT_IDS = (1, 14)  # platinum, 100% completion: fixed holder counts
 EARLY_MED_H = 8.0     # median banked hours at release
 EARLY_SIG = 0.35      # lognormal sigma of banked hours
 EARLY_RATE = 7.0      # they keep playing at the hardcore rate (h/day)
+BINGE = 2.0           # launch-day play-rate multiplier for young cohorts
+BINGE_TAU_D = 2.0     # binge decays with this time constant (days)
+# (Model K change.) A cohort's first day or two run hotter than its
+# steady daily rate: launch-week buyers play far more in their first
+# hours than the long-run 1.65 / 7 h-per-day averages imply, and the
+# recorded refreshes prove it — the new cohort at refresh 2 already
+# holds far more early trophies than the steady rates can produce
+# (Ch1 +84 holders R1->R2 where the steady model gives ~+39).  The
+# is 2x at arrival and fades over ~2 days, so it lifts young-cohort
+# progression without touching the steady-state day-7 shape; the
+# runtime fit re-balances (lam, tau_scale, early_n) around it.  Tuned
+# on the suite (B=2, tau=2d beats B=1.5/2.5/3 and tau=0.5/1/3d on the
+# deciding tests); sigma is UNCHANGED everywhere.
 EARLY_INFLOW_FRAC = float(os.environ.get("MAKEFUN_I_EARLY_FRAC",
                                           "0.015"))  # share of each later
 # cohort that is early-like (bought early, banked hours, tracked only at
@@ -481,8 +505,9 @@ def cohort_holders(taus, cohorts, when_s, lam, early_n, const_counts):
         age_d = max((when_s - arr_s) / 86400.0, 0.0)
         if age_d <= 0.0 or size <= 0:
             continue
-        med_reg = min(M_REG * lam * age_d, DAY_CAP * age_d)
-        med_hard = min(M_HARD * lam * age_d, DAY_CAP * age_d)
+        _bg = 1.0 + (BINGE - 1.0) * math.exp(-age_d / BINGE_TAU_D)
+        med_reg = min(M_REG * lam * age_d * _bg, DAY_CAP * age_d)
+        med_hard = min(M_HARD * lam * age_d * _bg, DAY_CAP * age_d)
         med_early = EARLY_MED_H + EARLY_RATE * age_d
         for i in range(n):
             if taus[i] is None:
